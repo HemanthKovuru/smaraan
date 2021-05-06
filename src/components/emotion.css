@@ -1,0 +1,128 @@
+.btn {
+  padding: 0.5rem 1rem;
+  background-color: #1abc9c;
+  border: none;
+  color: #fff;
+  letter-spacing: 1px;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-right: 20px;
+}
+
+.video-container {
+  visibility: hidden;
+}
+
+.middle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+}
+
+.btn-test {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.video {
+  visibility: hidden;
+  display: none;
+}
+
+.arrow {
+  color: #fff;
+  font-size: 1rem;
+  fill: blue;
+  width: 3rem;
+  height: 3rem;
+  cursor: pointer;
+  position: absolute;
+}
+
+.arrow-left {
+  bottom: 45%;
+  left: 0;
+  transform: rotate(180deg);
+}
+
+.arrow-right {
+  top: 45%;
+  right: 0;
+}
+
+.question-box {
+  width: 500px;
+  background-color: #1abc9c;
+  height: 10rem;
+  top: 50%;
+  border-radius: 4px;
+  color: #fff;
+  text-align: center;
+}
+
+.btns-left {
+  position: absolute;
+  top: 10%;
+  left: 10%;
+}
+
+.btns-right {
+  position: absolute;
+  top: 10%;
+  right: 10%;
+}
+
+/* camera permissions */
+
+.permission-container {
+  display: flex;
+  width: 100%;
+  height: 500px;
+  /* background-color: red; */
+}
+
+.permission-container-left {
+  width: 50%;
+  display: flex;
+}
+
+.permission-container-right {
+  width: 50%;
+  display: flex;
+}
+
+.terms {
+  overflow-y: scroll;
+  padding-right: 10px;
+}
+
+.terms::-webkit-scrollbar {
+  width: 10px;
+}
+.terms::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 2px grey;
+  border-radius: 5px;
+}
+
+.terms::-webkit-scrollbar-thumb {
+  background: #3abba1;
+  border-radius: 5px;
+}
+
+.icon-per {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-right: 10px;
+}
+
+.btn-cont {
+  margin-top: 1rem;
+}
+
+.u-margin-small {
+  margin: 10px 0;
+}
