@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import * as faceapi from "@vladmandic/face-api";
 import * as cocoSsd from "@tensorflow-models/coco-ssd";
-import Slider from "./Slider";
 import "./emotion.css";
 
 import Mic from "./../SVG/mic.svg";
 import Video from "./../SVG/video.svg";
+import Arrow from "./../SVG/arrow-right-circle.svg";
 
 import { startVideo, prediction_string } from "./../utils/utilities";
 
@@ -18,8 +18,14 @@ const EmotionAndObjectDetection = () => {
   const [auidoPer, setAudioPer] = useState(false);
   const [scrollNext, setScrollNext] = useState(false);
   const [time, setTime] = useState(0);
+  const [minDecibal, setMinDecibal] = useState(0);
+  const [maxDecibal, setMaxDecibal] = useState(0);
+  const [questionNum, setQuestionNum] = useState(0);
 
   const questions = ["Question-1", "Question-2", "Question-3"];
+  let videoInterval;
+  let audioInterval;
+  let recorder;
 
   const handleScroll = () => {
     const terms = document.getElementsByClassName("terms")[0];
@@ -41,36 +47,107 @@ const EmotionAndObjectDetection = () => {
     const video = document.getElementById("video");
 
     // face api models path
-    const MODEL_URL = process.env.PUBLIC_URL + "/models";
+    const MODEl_URL = process.env.PUBLIC_URL + "/models";
 
     //  load models
     const net = await cocoSsd.load();
 
     Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-      faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEl_URL),
+      faceapi.nets.faceExpressionNet.loadFromUri(MODEl_URL),
     ])
       .then(startVideo)
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch((err) => console.log(err));
 
     // on video play
     video.addEventListener("play", () => {
-      setInterval(async () => {
+      videoInterval = setInterval(async () => {
         const predictions = await faceapi
           .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-          .withFaceLandmarks()
           .withFaceExpressions();
 
         const obj = await net.detect(video);
+        console.log(obj, predictions);
         setObjects(obj.length);
-
         prediction_string(predictions[0], setEmotion);
       }, 100);
     });
+  };
+
+  const getAudio = () => {
+    return navigator.mediaDevices.getUserMedia(
+      {
+        audio: true,
+        video: false,
+      },
+      (stream) => {
+        recorder = new MediaRecorder(stream);
+      }
+    );
+  };
+
+  // audio
+  const handleAudio = async () => {
+    if (navigator.getUserMedia) {
+      // create audio context
+      var audiocontext = new AudioContext();
+      audiocontext.createAnalyser();
+
+      // get audio from microphone
+
+      const audio = await getAudio();
+      console.log(audio);
+      const source = audiocontext.createMediaStreamSource(audio);
+
+      //Create analyser node
+      const analyserNode = audiocontext.createAnalyser();
+      analyserNode.fftSize = 256;
+
+      const bufferLength = analyserNode.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      //Set up audio node network
+      source.connect(analyserNode);
+
+      const draw = () => {
+        //Schedule next redraw
+        requestAnimationFrame(draw);
+
+        //Get spectrum data
+        analyserNode.getByteFrequencyData(dataArray);
+      };
+      draw();
+
+      audioInterval = setInterval(() => {
+        const min = Math.min(...dataArray);
+        const max = Math.max(...dataArray);
+
+        if (min > minDecibal) setMinDecibal(min);
+        if (max > maxDecibal) setMaxDecibal(max);
+      }, 5000);
+    } else {
+      console.log("getUserMedia not supported");
+    }
+  };
+
+  const stopAnalyse = () => {
+    if (videoPer) {
+      const video = document.querySelector("video");
+      const mediaStream = video.srcObject;
+      const tracks = mediaStream.getTracks();
+      tracks[0].stop();
+      video.srcObject = null;
+    }
+
+    if (auidoPer) {
+      console.log(recorder);
+      clearInterval(audioInterval);
+      recorder.stream.getAudioTracks().forEach(function (track) {
+        track.stop();
+      });
+    }
+    clearInterval(audioInterval);
+    clearInterval(videoInterval);
   };
 
   // continue button
@@ -79,25 +156,53 @@ const EmotionAndObjectDetection = () => {
     if (videoPer) {
       handleClick();
     }
+    if (auidoPer) {
+      handleAudio();
+    }
   };
 
   // arrow left button
   const handleRightArrow = () => {
-    const doc = document.querySelector(".slider");
-    doc.scrollLeft = doc.scrollLeft + window.screen.width;
+    // for question
+    if (questionNum !== questions.length - 1) {
+      setQuestionNum(questionNum + 1);
+    }
+
+    // time
     const currentTime = new Date().getTime();
     setTime(currentTime);
+    let min;
+    if (minDecibal === 0) {
+      min = 1;
+    } else {
+      min = minDecibal;
+    }
+
+    // calculate audio
+    let audioDistractions = ((maxDecibal - min) / min) * 100;
+    let dist;
+    if (audioDistractions > 40) {
+      dist = true;
+    } else {
+      dist = false;
+    }
+
     console.log({
       emotion,
       timeTaken: currentTime - time,
-      distranctions: objects,
+      videoDistranctions: objects,
+      audioLevel: audioDistractions,
+      audioDistraction: dist,
+      minDecibal,
+      maxDecibal,
     });
   };
 
   // arrow right button
   const handleLeftArrow = () => {
-    const doc = document.querySelector(".slider");
-    doc.scrollLeft = doc.scrollLeft - window.screen.width;
+    if (questionNum > 0) {
+      setQuestionNum(questionNum - 1);
+    }
   };
 
   return (
@@ -239,11 +344,24 @@ const EmotionAndObjectDetection = () => {
 
       {step === "three" && (
         <div>
-          <Slider
-            handleRightArrow={handleRightArrow}
-            handleLeftArrow={handleLeftArrow}
-            questions={questions}
-          />
+          <div className='slider'>
+            <div className='wrapper'>
+              <div className='box'>{questions[questionNum]}</div>
+            </div>
+            <img
+              onClick={handleLeftArrow}
+              className='arrow arrow1'
+              src={Arrow}
+              alt='arrow'
+            />
+            <img
+              onClick={handleRightArrow}
+              className='arrow arrow2'
+              src={Arrow}
+              alt='arrow'
+            />
+          </div>
+          <button onClick={stopAnalyse}>stop</button>
         </div>
       )}
 

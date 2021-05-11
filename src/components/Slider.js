@@ -2,15 +2,11 @@ import React from "react";
 import "./slider.css";
 import Arrow from "./../SVG/arrow-right-circle.svg";
 
-const Slider = ({ questions, handleLeftArrow, handleRightArrow }) => {
+const Slider = ({ question, handleLeftArrow, handleRightArrow }) => {
   return (
     <div className='slider'>
       <div className='wrapper'>
-        {questions.map((q) => (
-          <div key={q} className='box'>
-            {q}
-          </div>
-        ))}
+        <div className='box'>{question}</div>
       </div>
       <img
         onClick={handleLeftArrow}
